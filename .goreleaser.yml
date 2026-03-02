@@ -22,33 +22,19 @@ builds:
     ldflags:
       - -s -w
 
-dockers:
-  - id: smtp2discord-amd64
-    use: buildx
-    image_templates:
-      - ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}-amd64
+dockers_v2:
+  - id: smtp2discord
     dockerfile: Dockerfile
-    goos: linux
-    goarch: amd64
-
-  - id: smtp2discord-arm64
-    use: buildx
-    image_templates:
-      - ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}-arm64
-    dockerfile: Dockerfile
-    goos: linux
-    goarch: arm64
-
-docker_manifests:
-  - name_template: ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}
-    image_templates:
-      - ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}-amd64
-      - ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}-arm64
-
-  - name_template: ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:latest
-    image_templates:
-      - ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}-amd64
-      - ghcr.io/{{ .Env.GITHUB_REPOSITORY | lower }}:{{ .Tag }}-arm64
+    ids:
+      - smtp2discord
+    images:
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY_LOWER }}
+    tags:
+      - "{{ .Tag }}"
+      - latest
+    platforms:
+      - linux/amd64
+      - linux/arm64
 
 changelog:
   use: github

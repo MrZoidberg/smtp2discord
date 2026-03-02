@@ -30,7 +30,7 @@ Run with custom template file:
 
 Docker example:
 
-- `docker run -p 25:25 -v $(pwd)/my-template.tmpl:/templates/my-template.tmpl ghcr.io/donserdal/smtp2discord:latest --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN> --message-template-file=/templates/my-template.tmpl`
+- `docker run -p 25:25 -v $(pwd)/my-template.tmpl:/templates/my-template.tmpl ghcr.io/MrZoidberg/smtp2discord:latest --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN> --message-template-file=/templates/my-template.tmpl`
 
 Example custom template file:
 
@@ -52,10 +52,7 @@ Locally:
 - `docker build -f Dockerfile.dev -t smtp2discord-dev .`
 - `docker run -p 25:25 smtp2discord-dev --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api`
 
-Or build it as it comes from the repo:
-
-- `docker build -t smtp2discord .`
-- `docker run -p 25:25 smtp2discord --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api`
+Note: `Dockerfile` is optimized for GoReleaser `dockers_v2` and copies prebuilt binaries from `$TARGETPLATFORM/...`.
 
 The `timeout` options are optional but make local testing easier with `telnet localhost 25`.
 
@@ -80,13 +77,13 @@ your mail content
 
 Docker images are published to GitHub Container Registry (GHCR):
 
-- `docker pull ghcr.io/donserdal/smtp2discord:latest`
+- `docker pull ghcr.io/MrZoidberg/smtp2discord:latest`
 - Minimal required args:
-  - `docker run -p 25:25 ghcr.io/donserdal/smtp2discord:latest --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
+  - `docker run -p 25:25 ghcr.io/MrZoidberg/smtp2discord:latest --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
 - Full common args:
-  - `docker run -p 25:25 ghcr.io/donserdal/smtp2discord:latest --name=smtp2discord --listen=:25 --msglimit=2097152 --timeout.read=5 --timeout.write=5 --author="SMTP Bridge" --avatar-url="https://example.com/bot.png" --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
+  - `docker run -p 25:25 ghcr.io/MrZoidberg/smtp2discord:latest --name=smtp2discord --listen=:25 --msglimit=2097152 --timeout.read=5 --timeout.write=5 --author="SMTP Bridge" --avatar-url="https://example.com/bot.png" --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
 - With SMTP AUTH PLAIN enabled (both required together):
-  - `docker run -p 25:25 ghcr.io/donserdal/smtp2discord:latest --smtp-user=myuser --smtp-pass=mypass --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
+  - `docker run -p 25:25 ghcr.io/MrZoidberg/smtp2discord:latest --smtp-user=myuser --smtp-pass=mypass --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
 
 Required/validation rules:
 
@@ -99,7 +96,7 @@ Required/validation rules:
 services:
   smtp2discord:
     container_name: smtp2discord
-    image: ghcr.io/donserdal/smtp2discord:latest
+    image: ghcr.io/MrZoidberg/smtp2discord:latest
     command: >-
       --name=smtp2discord
       --listen=:25
