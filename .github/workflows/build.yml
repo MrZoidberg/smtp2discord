@@ -1,10 +1,13 @@
-name: PR Checks
+name: Build and Test
 
 on:
   pull_request:
     branches:
       - master
     types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - master
 
 permissions:
   contents: read
