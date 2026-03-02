@@ -14,6 +14,113 @@ Forwarded message format in Discord:
 - If `From` header is missing, `<from>` falls back to SMTP envelope sender (`MAIL FROM`).
 - If one field is missing, the template omits the unnecessary separator automatically.
 
+## Installation
+
+### Quick install (all supported OS)
+
+The installer detects your OS, downloads the correct package, installs the service, and prompts for your Discord webhook URL.
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh
+```
+
+Supply the webhook URL non-interactively (useful for automated provisioning):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh -s -- --webhook https://discord.com/api/webhooks/<ID>/<TOKEN>
+```
+
+Upgrade an existing installation (config is preserved):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh -s -- --upgrade
+```
+
+**Supported operating systems:** Ubuntu, Debian, Alpine, Fedora, Amazon Linux 2023 (x86_64 and arm64).
+
+---
+
+### Manual package install
+
+Download the package for your OS and architecture from the [latest release](https://github.com/MrZoidberg/smtp2discord/releases/latest).
+
+#### Ubuntu / Debian
+
+```sh
+# Download the .deb (replace version and arch as needed)
+curl -LO https://github.com/MrZoidberg/smtp2discord/releases/latest/download/smtp2discord_<version>_linux_amd64.deb
+
+# Install
+sudo apt-get install -y ./smtp2discord_*.deb
+```
+
+#### Fedora
+
+```sh
+curl -LO https://github.com/MrZoidberg/smtp2discord/releases/latest/download/smtp2discord_<version>_linux_amd64.rpm
+sudo dnf install -y ./smtp2discord_*.rpm
+```
+
+#### Amazon Linux 2023
+
+```sh
+curl -LO https://github.com/MrZoidberg/smtp2discord/releases/latest/download/smtp2discord_<version>_linux_amd64.rpm
+sudo dnf install -y ./smtp2discord_*.rpm
+```
+
+#### Alpine
+
+```sh
+curl -LO https://github.com/MrZoidberg/smtp2discord/releases/latest/download/smtp2discord_<version>_linux_amd64.apk
+sudo apk add --allow-untrusted ./smtp2discord_*.apk
+```
+
+---
+
+### Service configuration
+
+After installing, open `/etc/default/smtp2discord` in your editor and at minimum set the required webhook URL:
+
+```sh
+sudo $EDITOR /etc/default/smtp2discord
+```
+
+```sh
+# /etc/default/smtp2discord — required
+SMTP2DISCORD_WEBHOOK=https://discord.com/api/webhooks/<ID>/<TOKEN>
+
+# Optional overrides (all have built-in defaults):
+# SMTP2DISCORD_LISTEN=:smtp          # listen address (default: :smtp  →  port 25)
+# SMTP2DISCORD_NAME=smtp2discord     # SMTP banner name
+# SMTP2DISCORD_SMTP_USER=myuser      # AUTH PLAIN credentials (both or neither)
+# SMTP2DISCORD_SMTP_PASS=mypass
+# SMTP2DISCORD_AUTHOR=               # Discord message username
+# SMTP2DISCORD_AVATAR_URL=           # Discord avatar URL
+# SMTP2DISCORD_MSG_LIMIT=2097152     # max message size in bytes
+# SMTP2DISCORD_TIMEOUT_READ=5        # read timeout (seconds)
+# SMTP2DISCORD_TIMEOUT_WRITE=5       # write timeout (seconds)
+# SMTP2DISCORD_MESSAGE_TEMPLATE_FILE= # path to custom Go template
+```
+
+Then start (or restart) the service:
+
+| Init system | Start | Restart | Logs |
+|-------------|-------|---------|------|
+| systemd (Ubuntu, Debian, Fedora, Amazon Linux) | `sudo systemctl start smtp2discord` | `sudo systemctl restart smtp2discord` | `journalctl -u smtp2discord -f` |
+| OpenRC (Alpine) | `sudo rc-service smtp2discord start` | `sudo rc-service smtp2discord restart` | `sudo logread \| grep smtp2discord` |
+
+Enable auto-start on boot (if not already done by the installer):
+
+```sh
+# systemd
+sudo systemctl enable smtp2discord
+
+# OpenRC
+sudo rc-update add smtp2discord default
+```
+
+---
+
 ## Custom message template
 
 You can override message formatting with `--message-template-file`.
@@ -143,7 +250,6 @@ your mail content
 
 ## Contribution
 
-Original repo from @alash3al.
-Thanks to @aranajuan.
+Original repos from @alash3al and @MrZoidberg
 
 

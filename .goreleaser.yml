@@ -22,6 +22,57 @@ builds:
     ldflags:
       - -s -w
 
+archives:
+  - id: smtp2discord
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format: tar.gz
+
+nfpms:
+  - id: smtp2discord
+    package_name: smtp2discord
+    vendor: MrZoidberg
+    homepage: https://github.com/MrZoidberg/smtp2discord
+    maintainer: MrZoidberg <mike@merkulov.me>
+    description: SMTP to Discord webhook bridge — forwards incoming email to a Discord channel via webhook.
+    license: Apache-2.0
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+    scripts:
+      postinstall: packaging/scripts/postinstall.sh
+      preremove: packaging/scripts/preremove.sh
+    contents:
+      # Drop-in environment file with all configuration options.
+      # Marked noreplace so upgrades never overwrite user edits.
+      - src: packaging/default/smtp2discord
+        dst: /etc/default/smtp2discord
+        type: config|noreplace
+      # systemd unit — included in deb and rpm packages only.
+      - src: packaging/systemd/smtp2discord.service
+        dst: /lib/systemd/system/smtp2discord.service
+        type: config|noreplace
+        packager: deb
+      - src: packaging/systemd/smtp2discord.service
+        dst: /lib/systemd/system/smtp2discord.service
+        type: config|noreplace
+        packager: rpm
+      # OpenRC init script — included in apk packages only.
+      - src: packaging/openrc/smtp2discord.initd
+        dst: /etc/init.d/smtp2discord
+        file_info:
+          mode: 0755
+        type: config|noreplace
+        packager: apk
+    overrides:
+      deb:
+        dependencies:
+          - adduser
+      rpm:
+        dependencies:
+          - shadow-utils
+
 dockers_v2:
   - id: smtp2discord
     dockerfile: Dockerfile
