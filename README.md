@@ -291,6 +291,6 @@ your mail content
 
 ## Contribution
 
-Original repos from @alash3al and @donserdal
+Original repos from [@alash3al](https://github.com/alash3al/smtp2http) and [@donserdal](https://github.com/donserdal/smtp2discord)
 
 
