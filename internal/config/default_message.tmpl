@@ -1,0 +1,5 @@
+{{- $hasHeader := or .From .Subject -}}
+{{- if $hasHeader }}
+**{{ if .From }}{{ .From }}{{ end }}{{ if and .From .Subject }}: {{ end }}{{ if .Subject }}{{ .Subject }}{{ end }}**
+{{ end }}
+{{- .Body -}}

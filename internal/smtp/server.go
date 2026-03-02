@@ -1,6 +1,7 @@
 package smtp
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log/slog"
@@ -8,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/mail"
 	"strings"
+	"text/template"
 
 	"github.com/emersion/go-sasl"
 	gosmtp "github.com/emersion/go-smtp"
@@ -18,17 +20,21 @@ import (
 
 // Server wraps the SMTP server configuration and its dependencies.
 type Server struct {
-	cfg     *config.Config
-	discord *discord.Client
-	logger  *slog.Logger
+	cfg             *config.Config
+	discord         *discord.Client
+	logger          *slog.Logger
+	messageTemplate *template.Template
 }
 
 // NewServer creates a new SMTP server with the given configuration and logger.
 func NewServer(cfg *config.Config, logger *slog.Logger) *Server {
+	messageTemplate := template.Must(template.New("discord-message").Option("missingkey=zero").Parse(cfg.MessageTemplate))
+
 	return &Server{
-		cfg:     cfg,
-		discord: discord.NewClient(cfg.Webhook),
-		logger:  logger,
+		cfg:             cfg,
+		discord:         discord.NewClient(cfg.Webhook),
+		logger:          logger,
+		messageTemplate: messageTemplate,
 	}
 }
 
@@ -49,21 +55,28 @@ func (s *Server) ListenAndServe() error {
 }
 
 // handleMessage processes an incoming SMTP message and forwards it to Discord.
-func (s *Server) handleMessage(rawMessage io.Reader) error {
+func (s *Server) handleMessage(rawMessage io.Reader, envelopeFrom string) error {
 	msg, err := mail.ReadMessage(rawMessage)
 	if err != nil {
 		return fmt.Errorf("cannot parse message: %w", err)
 	}
+
+	from, subject := extractMessageMetadata(msg, envelopeFrom)
 
 	body, err := extractTextBody(msg)
 	if err != nil {
 		return fmt.Errorf("cannot extract message body: %w", err)
 	}
 
+	content, err := s.formatDiscordContent(from, subject, body)
+	if err != nil {
+		return fmt.Errorf("cannot format discord content: %w", err)
+	}
+
 	discordMsg := discord.Message{
 		Username:  s.cfg.Author,
 		AvatarURL: s.cfg.AvatarURL,
-		Content:   body,
+		Content:   content,
 	}
 
 	if err := s.discord.Send(discordMsg); err != nil {
@@ -71,7 +84,7 @@ func (s *Server) handleMessage(rawMessage io.Reader) error {
 		return fmt.Errorf("cannot forward message to Discord: %w", err)
 	}
 
-	s.logger.Info("message forwarded to Discord")
+	s.logger.Info(fmt.Sprintf("message forwarded to Discord from %s with subject %s", from, subject))
 	return nil
 }
 
@@ -86,12 +99,15 @@ func (b *backend) NewSession(*gosmtp.Conn) (gosmtp.Session, error) {
 type session struct {
 	server        *Server
 	authenticated bool
+	mailFrom      string
 }
 
-func (s *session) Mail(string, *gosmtp.MailOptions) error {
+func (s *session) Mail(from string, _ *gosmtp.MailOptions) error {
 	if s.server.cfg.SMTPUsername != "" && !s.authenticated {
 		return &gosmtp.SMTPError{Code: 530, Message: "Authentication required"}
 	}
+
+	s.mailFrom = strings.TrimSpace(from)
 
 	return nil
 }
@@ -101,10 +117,12 @@ func (s *session) Rcpt(string, *gosmtp.RcptOptions) error {
 }
 
 func (s *session) Data(reader io.Reader) error {
-	return s.server.handleMessage(reader)
+	return s.server.handleMessage(reader, s.mailFrom)
 }
 
-func (s *session) Reset() {}
+func (s *session) Reset() {
+	s.mailFrom = ""
+}
 
 func (s *session) Logout() error {
 	return nil
@@ -230,4 +248,72 @@ func extractTextFromMultipart(body io.Reader, boundary string) (string, error) {
 	}
 
 	return "", nil
+}
+
+func extractMessageMetadata(msg *mail.Message, envelopeFrom string) (string, string) {
+	fromHeader := decodeMIMEHeader(strings.TrimSpace(msg.Header.Get("From")))
+	subject := decodeMIMEHeader(strings.TrimSpace(msg.Header.Get("Subject")))
+
+	if fromHeader == "" {
+		return normalizeFrom(envelopeFrom), subject
+	}
+
+	addresses, err := mail.ParseAddressList(fromHeader)
+	if err != nil || len(addresses) == 0 {
+		return fromHeader, subject
+	}
+
+	normalized := make([]string, 0, len(addresses))
+	for _, address := range addresses {
+		normalized = append(normalized, address.String())
+	}
+
+	return strings.Join(normalized, ", "), subject
+}
+
+func normalizeFrom(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+
+	address, err := mail.ParseAddress(value)
+	if err != nil {
+		return value
+	}
+
+	return address.String()
+}
+
+func decodeMIMEHeader(value string) string {
+	if value == "" {
+		return ""
+	}
+
+	decoded, err := new(mime.WordDecoder).DecodeHeader(value)
+	if err != nil {
+		return value
+	}
+
+	return decoded
+}
+
+func (s *Server) formatDiscordContent(from, subject, body string) (string, error) {
+	type messageTemplateData struct {
+		From    string
+		Subject string
+		Body    string
+	}
+
+	var buffer bytes.Buffer
+	err := s.messageTemplate.Execute(&buffer, messageTemplateData{
+		From:    from,
+		Subject: subject,
+		Body:    body,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(buffer.String()), nil
 }

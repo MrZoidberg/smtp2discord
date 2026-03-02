@@ -2,16 +2,53 @@
 
 smtp2discord is a simple SMTP server that resends incoming email to the configured web endpoint (webhook) as a Discord webhook HTTP POST request.
 
+Forwarded message format in Discord:
+
+- Default format is:
+
+```text
+<from>: <subject>
+<body>
+```
+
+- If `From` header is missing, `<from>` falls back to SMTP envelope sender (`MAIL FROM`).
+- If one field is missing, the template omits the unnecessary separator automatically.
+
+## Custom message template
+
+You can override message formatting with `--message-template-file`.
+
+Template data fields available in Go template files:
+
+- `{{ .From }}`
+- `{{ .Subject }}`
+- `{{ .Body }}`
+
+Run with custom template file:
+
+- `smtp2discord --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN> --message-template-file=./my-template.tmpl`
+
+Docker example:
+
+- `docker run -p 25:25 -v $(pwd)/my-template.tmpl:/templates/my-template.tmpl ghcr.io/donserdal/smtp2discord:latest --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN> --message-template-file=/templates/my-template.tmpl`
+
+Example custom template file:
+
+```gotemplate
+[FROM] {{ .From }}
+[SUBJECT] {{ .Subject }}
+
+{{ .Body }}
+```
+
 ## Dev
 
-- `go mod vendor`
 - `go build`
 
 ## Dev with Docker
 
 Locally:
 
-- `go mod vendor`
 - `docker build -f Dockerfile.dev -t smtp2discord-dev .`
 - `docker run -p 25:25 smtp2discord-dev --timeout.read=50 --timeout.write=50 --webhook=http://some.hook/api`
 
@@ -59,7 +96,6 @@ Required/validation rules:
 ## Docker Compose
 
 ```yaml
-version: '3.1'
 services:
   smtp2discord:
     container_name: smtp2discord
