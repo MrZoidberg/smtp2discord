@@ -1,0 +1,38 @@
+[Unit]
+Description=smtp2discord — SMTP to Discord webhook bridge
+Documentation=https://github.com/MrZoidberg/smtp2discord
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=smtp2discord
+Group=smtp2discord
+
+# All runtime configuration lives in /etc/default/smtp2discord.
+# Set at minimum SMTP2DISCORD_WEBHOOK there before starting.
+EnvironmentFile=-/etc/default/smtp2discord
+
+ExecStart=/usr/bin/smtp2discord
+
+# Allow binding to privileged ports (e.g. port 25) without running as root.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+# Hardening
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=
+
+Restart=on-failure
+RestartSec=5s
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=smtp2discord
+
+[Install]
+WantedBy=multi-user.target

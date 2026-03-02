@@ -14,18 +14,20 @@ import (
 var defaultMessageTemplate string
 
 // Options holds the application configuration parsed from command-line flags.
+// Every field also accepts a corresponding environment variable (listed in the env tag).
+// Flags take precedence over environment variables.
 type Options struct {
-	ServerName     string `long:"name"          default:"smtp2discord"           description:"The server banner name"`
-	ListenAddr     string `long:"listen"        default:":smtp"                  description:"SMTP address to listen on"`
-	SMTPUsername   string `long:"smtp-user"     default:""                       description:"SMTP AUTH PLAIN username"`
-	SMTPPassword   string `long:"smtp-pass"     default:""                       description:"SMTP AUTH PLAIN password"`
-	TemplateFile   string `long:"message-template-file" default:""                 description:"Path to Go template file for Discord message formatting"`
-	Author         string `long:"author"        default:""                       description:"Username shown on Discord messages"`
-	AvatarURL      string `long:"avatar-url"    default:""                       description:"Avatar URL of the Discord bot"`
-	Webhook        string `long:"webhook"       default:""         required:"true" description:"Discord webhook URL"`
-	MaxMessageSize int    `long:"msglimit"      default:"2097152"                description:"Maximum incoming message size in bytes"`
-	ReadTimeout    int    `long:"timeout.read"  default:"5"                      description:"Read timeout in seconds"`
-	WriteTimeout   int    `long:"timeout.write" default:"5"                      description:"Write timeout in seconds"`
+	ServerName     string `long:"name"                  default:"smtp2discord" env:"SMTP2DISCORD_NAME"                  description:"The server banner name"`
+	ListenAddr     string `long:"listen"                default:":smtp"        env:"SMTP2DISCORD_LISTEN"                description:"SMTP address to listen on"`
+	SMTPUsername   string `long:"smtp-user"             default:""             env:"SMTP2DISCORD_SMTP_USER"             description:"SMTP AUTH PLAIN username"`
+	SMTPPassword   string `long:"smtp-pass"             default:""             env:"SMTP2DISCORD_SMTP_PASS"             description:"SMTP AUTH PLAIN password"`
+	TemplateFile   string `long:"message-template-file" default:""             env:"SMTP2DISCORD_MESSAGE_TEMPLATE_FILE" description:"Path to Go template file for Discord message formatting"`
+	Author         string `long:"author"                default:""             env:"SMTP2DISCORD_AUTHOR"                description:"Username shown on Discord messages"`
+	AvatarURL      string `long:"avatar-url"            default:""             env:"SMTP2DISCORD_AVATAR_URL"            description:"Avatar URL of the Discord bot"`
+	Webhook        string `long:"webhook"               default:""             env:"SMTP2DISCORD_WEBHOOK" required:"true" description:"Discord webhook URL"`
+	MaxMessageSize int    `long:"msglimit"              default:"2097152"      env:"SMTP2DISCORD_MSG_LIMIT"             description:"Maximum incoming message size in bytes"`
+	ReadTimeout    int    `long:"timeout.read"          default:"5"            env:"SMTP2DISCORD_TIMEOUT_READ"          description:"Read timeout in seconds"`
+	WriteTimeout   int    `long:"timeout.write"         default:"5"            env:"SMTP2DISCORD_TIMEOUT_WRITE"         description:"Write timeout in seconds"`
 }
 
 // Config holds resolved configuration with typed durations.

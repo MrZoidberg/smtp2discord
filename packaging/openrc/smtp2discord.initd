@@ -1,0 +1,32 @@
+#!/sbin/openrc-run
+
+description="smtp2discord — SMTP to Discord webhook bridge"
+
+# Path to the configuration file (sourced as shell variables before start).
+SMTP2DISCORD_CONF="${SMTP2DISCORD_CONF:-/etc/default/smtp2discord}"
+
+# Source the configuration file if it exists.
+[ -f "${SMTP2DISCORD_CONF}" ] && . "${SMTP2DISCORD_CONF}"
+
+command="/usr/bin/smtp2discord"
+command_user="smtp2discord:smtp2discord"
+command_background=yes
+pidfile="/run/smtp2discord.pid"
+output_logger="logger -t smtp2discord"
+error_logger="logger -t smtp2discord"
+
+depend() {
+    need net
+    after firewall
+}
+
+checkconfig() {
+    if [ -z "${SMTP2DISCORD_WEBHOOK}" ]; then
+        eerror "SMTP2DISCORD_WEBHOOK must be set in ${SMTP2DISCORD_CONF}"
+        return 1
+    fi
+}
+
+start_pre() {
+    checkconfig || return 1
+}
