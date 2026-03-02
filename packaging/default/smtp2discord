@@ -25,9 +25,18 @@ SMTP2DISCORD_WEBHOOK=
 # Default: smtp2discord
 #SMTP2DISCORD_NAME=smtp2discord
 
-# SMTP AUTH PLAIN credentials.  Both must be set or both must be empty.
+# SMTP AUTH PLAIN credentials. Both must be set or both must be empty.
+# Password is stored as a bcrypt hash (not plaintext).
+#
+# Generate a strong password:
+#   openssl rand -base64 32 | tr -d '\n'
+#   # or: python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+#
+# Generate bcrypt hash (cost 10) for SMTP2DISCORD_SMTP_PASS_HASH:
+#   htpasswd -bnBC 10 "" "mypass" | tr -d ':\n'
+#   # or via Docker: docker run --rm httpd:2.4-alpine htpasswd -bnBC 10 "" "mypass" | tr -d ':\n'
 #SMTP2DISCORD_SMTP_USER=
-#SMTP2DISCORD_SMTP_PASS=
+#SMTP2DISCORD_SMTP_PASS_HASH='$2y$10$...'
 
 # Discord message author name shown as the webhook username.
 # Default: (empty — uses Discord webhook default name)

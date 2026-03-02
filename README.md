@@ -101,7 +101,7 @@ SMTP2DISCORD_WEBHOOK=https://discord.com/api/webhooks/<ID>/<TOKEN>
 # SMTP2DISCORD_LISTEN=:smtp          # listen address (default: :smtp  →  port 25)
 # SMTP2DISCORD_NAME=smtp2discord     # SMTP banner name
 # SMTP2DISCORD_SMTP_USER=myuser      # AUTH PLAIN credentials (both or neither)
-# SMTP2DISCORD_SMTP_PASS=mypass
+# SMTP2DISCORD_SMTP_PASS_HASH='$2y$10$...'  # bcrypt hash (NOT plaintext)
 # SMTP2DISCORD_AUTHOR=               # Discord message username
 # SMTP2DISCORD_AVATAR_URL=           # Discord avatar URL
 # SMTP2DISCORD_MSG_LIMIT=2097152     # max message size in bytes
@@ -198,12 +198,12 @@ Docker images are published to GitHub Container Registry (GHCR):
 - Full common args:
   - `docker run -p 25:25 ghcr.io/MrZoidberg/smtp2discord:latest --name=smtp2discord --listen=:25 --msglimit=2097152 --timeout.read=5 --timeout.write=5 --author="SMTP Bridge" --avatar-url="https://example.com/bot.png" --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
 - With SMTP AUTH PLAIN enabled (both required together):
-  - `docker run -p 25:25 ghcr.io/MrZoidberg/smtp2discord:latest --smtp-user=myuser --smtp-pass=mypass --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
+  - `docker run -p 25:25 ghcr.io/MrZoidberg/smtp2discord:latest --smtp-user=myuser --smtp-pass-hash='$2y$10$...' --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>`
 
 Required/validation rules:
 
 - `--webhook` is required.
-- `--smtp-user` and `--smtp-pass` must be provided together (or both omitted).
+- `--smtp-user` and `--smtp-pass-hash` must be provided together (or both omitted).
 
 ## Docker Compose
 
@@ -230,19 +230,52 @@ SMTP AUTH PLAIN in Compose:
 command: >-
   --listen=:25
   --smtp-user=myuser
-  --smtp-pass=mypass
+  --smtp-pass-hash=$$2y$$10$$...
   --webhook=https://discord.com/api/webhooks/<ID>/<TOKEN>
 ```
 
 ## Native usage
 
 - `smtp2discord --listen=:25 --webhook=http://localhost:8080/api/smtp-hook`
-- `smtp2discord --listen=:25 --smtp-user=myuser --smtp-pass=mypass --webhook=http://localhost:8080/api/smtp-hook`
+- `smtp2discord --listen=:25 --smtp-user=myuser --smtp-pass-hash='$2y$10$...' --webhook=http://localhost:8080/api/smtp-hook`
 - `smtp2discord --help`
 
 ## SMTP AUTH PLAIN
 
-If `--smtp-user` and `--smtp-pass` are provided, clients must authenticate before `MAIL FROM`.
+If `--smtp-user` and `--smtp-pass-hash` are provided, clients must authenticate before `MAIL FROM`.
+
+### Generate password + bcrypt hash
+
+1) Generate a strong password (pick one):
+
+```sh
+# OpenSSL
+openssl rand -base64 32 | tr -d '\n'
+```
+
+```sh
+# Python (no external deps)
+python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+```
+
+2) Generate a bcrypt hash for `--smtp-pass-hash` / `SMTP2DISCORD_SMTP_PASS_HASH` (example, cost 10):
+
+```sh
+htpasswd -bnBC 10 "" "mypass" | tr -d ':\n'
+```
+
+If you don’t have `htpasswd` installed, you can generate the same hash using Docker:
+
+```sh
+docker run --rm httpd:2.4-alpine htpasswd -bnBC 10 "" "mypass" | tr -d ':\n'
+```
+
+Set it in your service config (recommended quoting because bcrypt hashes contain `$`):
+
+```sh
+SMTP2DISCORD_SMTP_USER=myuser
+SMTP2DISCORD_SMTP_PASS_HASH='$2y$10$...'
+```
 
 Example session:
 

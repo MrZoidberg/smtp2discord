@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jessevdk/go-flags"
+	"golang.org/x/crypto/bcrypt"
 )
 
 //go:embed default_message.tmpl
@@ -20,7 +21,7 @@ type Options struct {
 	ServerName     string `long:"name"                  default:"smtp2discord" env:"SMTP2DISCORD_NAME"                  description:"The server banner name"`
 	ListenAddr     string `long:"listen"                default:":smtp"        env:"SMTP2DISCORD_LISTEN"                description:"SMTP address to listen on"`
 	SMTPUsername   string `long:"smtp-user"             default:""             env:"SMTP2DISCORD_SMTP_USER"             description:"SMTP AUTH PLAIN username"`
-	SMTPPassword   string `long:"smtp-pass"             default:""             env:"SMTP2DISCORD_SMTP_PASS"             description:"SMTP AUTH PLAIN password"`
+	SMTPPassHash   string `long:"smtp-pass-hash"        default:""             env:"SMTP2DISCORD_SMTP_PASS_HASH"        description:"SMTP AUTH PLAIN password hash (bcrypt)"`
 	TemplateFile   string `long:"message-template-file" default:""             env:"SMTP2DISCORD_MESSAGE_TEMPLATE_FILE" description:"Path to Go template file for Discord message formatting"`
 	Author         string `long:"author"                default:""             env:"SMTP2DISCORD_AUTHOR"                description:"Username shown on Discord messages"`
 	AvatarURL      string `long:"avatar-url"            default:""             env:"SMTP2DISCORD_AVATAR_URL"            description:"Avatar URL of the Discord bot"`
@@ -35,7 +36,7 @@ type Config struct {
 	ServerName      string
 	ListenAddr      string
 	SMTPUsername    string
-	SMTPPassword    string
+	SMTPPassHash    string
 	MessageTemplate string
 	Author          string
 	AvatarURL       string
@@ -53,9 +54,16 @@ func Load() *Config {
 		os.Exit(1)
 	}
 
-	if (opts.SMTPUsername == "") != (opts.SMTPPassword == "") {
-		fmt.Fprintln(os.Stderr, "--smtp-user and --smtp-pass must be provided together")
+	if (opts.SMTPUsername == "") != (opts.SMTPPassHash == "") {
+		fmt.Fprintln(os.Stderr, "--smtp-user and --smtp-pass-hash must be provided together")
 		os.Exit(1)
+	}
+
+	if opts.SMTPPassHash != "" {
+		if _, err := bcrypt.Cost([]byte(opts.SMTPPassHash)); err != nil {
+			fmt.Fprintf(os.Stderr, "invalid bcrypt hash in --smtp-pass-hash/SMTP2DISCORD_SMTP_PASS_HASH: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	messageTemplate := defaultMessageTemplate
@@ -77,7 +85,7 @@ func Load() *Config {
 		ServerName:      opts.ServerName,
 		ListenAddr:      opts.ListenAddr,
 		SMTPUsername:    opts.SMTPUsername,
-		SMTPPassword:    opts.SMTPPassword,
+		SMTPPassHash:    opts.SMTPPassHash,
 		MessageTemplate: messageTemplate,
 		Author:          opts.Author,
 		AvatarURL:       opts.AvatarURL,

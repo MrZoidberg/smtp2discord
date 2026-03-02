@@ -13,6 +13,7 @@ import (
 
 	"github.com/emersion/go-sasl"
 	gosmtp "github.com/emersion/go-smtp"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/MrZoidberg/smtp2discord/internal/config"
 	"github.com/MrZoidberg/smtp2discord/internal/discord"
@@ -146,7 +147,10 @@ func (s *session) Auth(mech string) (sasl.Server, error) {
 	}
 
 	return sasl.NewPlainServer(func(_, username, password string) error {
-		if username != s.server.cfg.SMTPUsername || password != s.server.cfg.SMTPPassword {
+		if username != s.server.cfg.SMTPUsername {
+			return gosmtp.ErrAuthFailed
+		}
+		if err := bcrypt.CompareHashAndPassword([]byte(s.server.cfg.SMTPPassHash), []byte(password)); err != nil {
 			return gosmtp.ErrAuthFailed
 		}
 
