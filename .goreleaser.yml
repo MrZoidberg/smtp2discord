@@ -1,0 +1,54 @@
+version: 2
+
+project_name: smtp2discord
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: smtp2discord
+    main: ./cmd/smtp2discord
+    binary: smtp2discord
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+
+dockers:
+  - id: smtp2discord-amd64
+    use: buildx
+    image_templates:
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-amd64
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: amd64
+
+  - id: smtp2discord-arm64
+    use: buildx
+    image_templates:
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-arm64
+    dockerfile: Dockerfile
+    goos: linux
+    goarch: arm64
+
+docker_manifests:
+  - name_template: ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}
+    image_templates:
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-amd64
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-arm64
+
+  - name_template: ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:latest
+    image_templates:
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-amd64
+      - ghcr.io/{{ .Env.GITHUB_REPOSITORY }}:{{ .Tag }}-arm64
+
+changelog:
+  use: github
