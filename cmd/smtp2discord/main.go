@@ -13,11 +13,6 @@ func main() {
 
 	cfg := config.Load()
 
-	if cfg.Webhook == "" {
-		logger.Error("webhook URL is required; set -webhook flag")
-		os.Exit(1)
-	}
-
 	server := smtp.NewServer(cfg, logger)
 
 	logger.Info("starting SMTP server", "addr", cfg.ListenAddr)

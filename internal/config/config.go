@@ -1,11 +1,25 @@
 package config
 
 import (
-	"flag"
+	"os"
 	"time"
+
+	"github.com/jessevdk/go-flags"
 )
 
-// Config holds the application configuration loaded from command-line flags.
+// Options holds the application configuration parsed from command-line flags.
+type Options struct {
+	ServerName     string `long:"name"          default:"smtp2discord"           description:"The server banner name"`
+	ListenAddr     string `long:"listen"        default:":smtp"                  description:"SMTP address to listen on"`
+	Author         string `long:"author"        default:""                       description:"Username shown on Discord messages"`
+	AvatarURL      string `long:"avatar-url"    default:""                       description:"Avatar URL of the Discord bot"`
+	Webhook        string `long:"webhook"       default:""         required:"true" description:"Discord webhook URL"`
+	MaxMessageSize int    `long:"msglimit"      default:"2097152"                description:"Maximum incoming message size in bytes"`
+	ReadTimeout    int    `long:"timeout.read"  default:"5"                      description:"Read timeout in seconds"`
+	WriteTimeout   int    `long:"timeout.write" default:"5"                      description:"Write timeout in seconds"`
+}
+
+// Config holds resolved configuration with typed durations.
 type Config struct {
 	ServerName     string
 	ListenAddr     string
@@ -18,26 +32,21 @@ type Config struct {
 }
 
 // Load parses command-line flags and returns a populated Config.
+// On parse error or --help, go-flags prints a message and exits.
 func Load() *Config {
-	serverName := flag.String("name", "smtp2discord", "the server name")
-	listenAddr := flag.String("listen", ":smtp", "the smtp address to listen on")
-	author := flag.String("author", "", "the username for the discord webhook")
-	avatarURL := flag.String("avatar-url", "", "the avatar URL of the bot")
-	webhook := flag.String("webhook", "", "the discord webhook URL")
-	maxMessageSize := flag.Int64("msglimit", 1024*1024*2, "maximum incoming message size in bytes")
-	readTimeout := flag.Int("timeout.read", 5, "the read timeout in seconds")
-	writeTimeout := flag.Int("timeout.write", 5, "the write timeout in seconds")
-
-	flag.Parse()
+	var opts Options
+	if _, err := flags.Parse(&opts); err != nil {
+		os.Exit(1)
+	}
 
 	return &Config{
-		ServerName:     *serverName,
-		ListenAddr:     *listenAddr,
-		Author:         *author,
-		AvatarURL:      *avatarURL,
-		Webhook:        *webhook,
-		MaxMessageSize: int(*maxMessageSize),
-		ReadTimeout:    time.Duration(*readTimeout) * time.Second,
-		WriteTimeout:   time.Duration(*writeTimeout) * time.Second,
+		ServerName:     opts.ServerName,
+		ListenAddr:     opts.ListenAddr,
+		Author:         opts.Author,
+		AvatarURL:      opts.AvatarURL,
+		Webhook:        opts.Webhook,
+		MaxMessageSize: opts.MaxMessageSize,
+		ReadTimeout:    time.Duration(opts.ReadTimeout) * time.Second,
+		WriteTimeout:   time.Duration(opts.WriteTimeout) * time.Second,
 	}
 }
