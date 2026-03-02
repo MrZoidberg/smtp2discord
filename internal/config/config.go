@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 type Options struct {
 	ServerName     string `long:"name"          default:"smtp2discord"           description:"The server banner name"`
 	ListenAddr     string `long:"listen"        default:":smtp"                  description:"SMTP address to listen on"`
+	SMTPUsername   string `long:"smtp-user"     default:""                       description:"SMTP AUTH PLAIN username"`
+	SMTPPassword   string `long:"smtp-pass"     default:""                       description:"SMTP AUTH PLAIN password"`
 	Author         string `long:"author"        default:""                       description:"Username shown on Discord messages"`
 	AvatarURL      string `long:"avatar-url"    default:""                       description:"Avatar URL of the Discord bot"`
 	Webhook        string `long:"webhook"       default:""         required:"true" description:"Discord webhook URL"`
@@ -23,6 +26,8 @@ type Options struct {
 type Config struct {
 	ServerName     string
 	ListenAddr     string
+	SMTPUsername   string
+	SMTPPassword   string
 	Author         string
 	AvatarURL      string
 	Webhook        string
@@ -39,9 +44,16 @@ func Load() *Config {
 		os.Exit(1)
 	}
 
+	if (opts.SMTPUsername == "") != (opts.SMTPPassword == "") {
+		fmt.Fprintln(os.Stderr, "--smtp-user and --smtp-pass must be provided together")
+		os.Exit(1)
+	}
+
 	return &Config{
 		ServerName:     opts.ServerName,
 		ListenAddr:     opts.ListenAddr,
+		SMTPUsername:   opts.SMTPUsername,
+		SMTPPassword:   opts.SMTPPassword,
 		Author:         opts.Author,
 		AvatarURL:      opts.AvatarURL,
 		Webhook:        opts.Webhook,

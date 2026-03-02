@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/donserdal/smtp2discord/internal/config"
-	"github.com/donserdal/smtp2discord/internal/smtp"
+	"github.com/MrZoidberg/smtp2discord/internal/config"
+	"github.com/MrZoidberg/smtp2discord/internal/smtp"
 )
 
 func main() {

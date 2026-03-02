@@ -49,7 +49,7 @@ version: '3.1'
 services:
   smtp2discord:
     container_name: smtp2discord
-    image: donserdal/smtp2discord
+    image: MrZoidberg/smtp2discord
     command: ' -webhook https://discord.com/api/webhooks/<ID>/<Pass>'
     ports:
       - '25:25'
@@ -60,7 +60,23 @@ services:
 Native usage
 =====
 `smtp2discord --listen=:25 --webhook=http://localhost:8080/api/smtp-hook`
+`smtp2discord --listen=:25 --smtp-user=myuser --smtp-pass=mypass --webhook=http://localhost:8080/api/smtp-hook`
 `smtp2discord --help`
+
+SMTP AUTH PLAIN
+=====
+If `--smtp-user` and `--smtp-pass` are provided, clients must authenticate before `MAIL FROM`.
+
+Example session:
+```
+EHLO localhost
+AUTH PLAIN AG15dXNlcgBteXBhc3M=
+MAIL FROM:<email@from.com>
+RCPT TO:<youremail@example.com>
+DATA
+your mail content
+.
+```
 
 Contribution
 ============
