@@ -291,6 +291,6 @@ your mail content
 
 ## Contribution
 
-Original repos from @alash3al and @MrZoidberg
+Original repos from @alash3al and @donserdal
 
 
