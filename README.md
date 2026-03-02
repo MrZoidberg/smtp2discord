@@ -24,6 +24,12 @@ The installer detects your OS, downloads the correct package, installs the servi
 curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh
 ```
 
+> **Alpine Linux** ships with `doas` instead of `sudo` — replace `sudo` with `doas` in all commands below.
+>
+> ```sh
+> curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh
+> ```
+
 Supply the webhook URL non-interactively (useful for automated provisioning):
 
 ```sh
@@ -70,9 +76,11 @@ sudo dnf install -y ./smtp2discord_*.rpm
 
 #### Alpine
 
+> **Note:** Alpine Linux ships with `doas` instead of `sudo`. Run commands as root or prefix them with `doas`.
+
 ```sh
 curl -LO https://github.com/MrZoidberg/smtp2discord/releases/latest/download/smtp2discord_<version>_linux_amd64.apk
-sudo apk add --allow-untrusted ./smtp2discord_*.apk
+doas apk add --allow-untrusted ./smtp2discord_*.apk
 ```
 
 ---
@@ -107,7 +115,7 @@ Then start (or restart) the service:
 | Init system | Start | Restart | Logs |
 |-------------|-------|---------|------|
 | systemd (Ubuntu, Debian, Fedora, Amazon Linux) | `sudo systemctl start smtp2discord` | `sudo systemctl restart smtp2discord` | `journalctl -u smtp2discord -f` |
-| OpenRC (Alpine) | `sudo rc-service smtp2discord start` | `sudo rc-service smtp2discord restart` | `sudo logread \| grep smtp2discord` |
+| OpenRC (Alpine) | `doas rc-service smtp2discord start` | `doas rc-service smtp2discord restart` | `doas logread \| grep smtp2discord` |
 
 Enable auto-start on boot (if not already done by the installer):
 
@@ -115,8 +123,8 @@ Enable auto-start on boot (if not already done by the installer):
 # systemd
 sudo systemctl enable smtp2discord
 
-# OpenRC
-sudo rc-update add smtp2discord default
+# OpenRC (Alpine)
+doas rc-update add smtp2discord default
 ```
 
 ---

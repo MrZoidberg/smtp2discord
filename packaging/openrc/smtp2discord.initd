@@ -8,6 +8,20 @@ SMTP2DISCORD_CONF="${SMTP2DISCORD_CONF:-/etc/default/smtp2discord}"
 # Source the configuration file if it exists.
 [ -f "${SMTP2DISCORD_CONF}" ] && . "${SMTP2DISCORD_CONF}"
 
+# Ensure configuration variables are passed to the daemon.
+# (Shell variables are not inherited by child processes unless exported.)
+export SMTP2DISCORD_NAME
+export SMTP2DISCORD_LISTEN
+export SMTP2DISCORD_SMTP_USER
+export SMTP2DISCORD_SMTP_PASS
+export SMTP2DISCORD_MESSAGE_TEMPLATE_FILE
+export SMTP2DISCORD_AUTHOR
+export SMTP2DISCORD_AVATAR_URL
+export SMTP2DISCORD_WEBHOOK
+export SMTP2DISCORD_MSG_LIMIT
+export SMTP2DISCORD_TIMEOUT_READ
+export SMTP2DISCORD_TIMEOUT_WRITE
+
 command="/usr/bin/smtp2discord"
 command_user="smtp2discord:smtp2discord"
 command_background=yes

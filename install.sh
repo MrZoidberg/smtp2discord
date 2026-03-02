@@ -6,13 +6,16 @@
 #
 # Usage:
 #   # Interactive (prompts for webhook URL):
-#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh        # Ubuntu/Debian/Fedora/Amazon Linux
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh         # Alpine (uses doas, not sudo)
 #
 #   # Non-interactive (webhook URL supplied via flag):
 #   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh -s -- --webhook https://discord.com/api/webhooks/<ID>/<TOKEN>
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh -s -- --webhook https://discord.com/api/webhooks/<ID>/<TOKEN>   # Alpine
 #
 #   # Upgrade an existing installation (preserves /etc/default/smtp2discord):
 #   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh -s -- --upgrade
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh -s -- --upgrade   # Alpine
 #
 set -e
 
@@ -25,6 +28,10 @@ CONFIG_FILE="/etc/default/smtp2discord"
 BINARY_PATH="/usr/bin/smtp2discord"
 SERVICE_NAME="smtp2discord"
 
+# If running inside an unprivileged LXC, binding to privileged ports (like 25)
+# may fail even when the service is configured correctly.
+IS_UNPRIVILEGED_LXC=0
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -33,10 +40,46 @@ warn()  { printf '\033[1;33m warn:\033[0m %s\n' "$*"; }
 error() { printf '\033[1;31m err: \033[0m %s\n' "$*" >&2; exit 1; }
 step()  { printf '\n\033[1;34m[%s]\033[0m %s\n' "$1" "$2"; }
 
+detect_unprivileged_lxc() {
+    _is_lxc=0
+
+    if command -v systemd-detect-virt >/dev/null 2>&1; then
+        if systemd-detect-virt --container 2>/dev/null | grep -qi '^lxc$'; then
+            _is_lxc=1
+        fi
+    fi
+
+    if [ "${_is_lxc}" -eq 0 ] && [ -r /proc/1/cgroup ]; then
+        if grep -qaE '(lxc|liblxc)' /proc/1/cgroup 2>/dev/null; then
+            _is_lxc=1
+        fi
+    fi
+
+    [ "${_is_lxc}" -eq 1 ] || return 0
+
+    # Unprivileged containers usually have a uid_map like: 0 100000 65536
+    # where the host uid base (2nd column) is non-zero.
+    _map_file=""
+    if [ -r /proc/1/uid_map ]; then
+        _map_file="/proc/1/uid_map"
+    elif [ -r /proc/self/uid_map ]; then
+        _map_file="/proc/self/uid_map"
+    fi
+
+    if [ -n "${_map_file}" ]; then
+        _line="$(head -n 1 "${_map_file}" 2>/dev/null | tr -s ' ' | sed 's/^ //')"
+        set -- ${_line}
+        _host_base="${2:-0}"
+        if [ "${_host_base}" != "0" ]; then
+            IS_UNPRIVILEGED_LXC=1
+        fi
+    fi
+}
+
 # Require root.
 require_root() {
     if [ "$(id -u)" -ne 0 ]; then
-        error "This installer must be run as root (try: sudo sh install.sh)"
+        error "This installer must be run as root (try: sudo sh install.sh  or  doas sh install.sh on Alpine)"
     fi
 }
 
@@ -321,6 +364,12 @@ print_summary() {
     echo "├──────────────────────────────────────────────────┤"
     echo "│  Configuration : ${CONFIG_FILE}"
     echo "│  Binary        : ${BINARY_PATH}"
+    if [ "${IS_UNPRIVILEGED_LXC}" -eq 1 ]; then
+        echo "│"
+        echo "│  WARNING: Unprivileged LXC detected."
+        echo "│  Port 25 usually will NOT work by default."
+        echo "│  Change SMTP2DISCORD_LISTEN to a different port (e.g., :2025)."
+    fi
     echo "│"
     echo "│  Useful commands:"
     if command -v systemctl >/dev/null 2>&1 && systemctl is-system-running >/dev/null 2>&1; then
@@ -345,6 +394,7 @@ main() {
     step "1/5" "Detecting OS and architecture"
     detect_os
     detect_package_manager
+    detect_unprivileged_lxc
     info "OS: ${OS_ID}  Arch: ${ARCH}  Package format: ${PKG_FORMAT}"
 
     step "2/5" "Resolving latest release"
