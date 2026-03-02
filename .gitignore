@@ -3,8 +3,8 @@ bin
 
 vendor
 
-# go executable built file
+# go executable built files
 smtp2http
 smtp2http.exe
-smtp2discord
+/smtp2discord
 smtp2discord.exe

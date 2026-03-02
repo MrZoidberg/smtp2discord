@@ -1,0 +1,44 @@
+package discord
+
+import (
+	"fmt"
+
+	"github.com/go-resty/resty/v2"
+)
+
+// Message represents the payload sent to a Discord webhook.
+type Message struct {
+	Username  string `json:"username,omitempty"`
+	AvatarURL string `json:"avatar_url,omitempty"`
+	Content   string `json:"content,omitempty"`
+}
+
+// Client sends messages to a Discord webhook.
+type Client struct {
+	webhookURL string
+	http       *resty.Client
+}
+
+// NewClient creates a new Discord webhook client.
+func NewClient(webhookURL string) *Client {
+	return &Client{
+		webhookURL: webhookURL,
+		http:       resty.New(),
+	}
+}
+
+// Send posts a message to the configured Discord webhook.
+// It returns an error if the HTTP request fails or Discord responds with a non-204 status.
+func (c *Client) Send(msg Message) error {
+	resp, err := c.http.R().
+		SetHeader("Content-Type", "application/json").
+		SetBody(msg).
+		Post(c.webhookURL)
+	if err != nil {
+		return fmt.Errorf("discord webhook request failed: %w", err)
+	}
+	if resp.StatusCode() != 204 {
+		return fmt.Errorf("discord webhook returned unexpected status: %s", resp.Status())
+	}
+	return nil
+}
