@@ -7,6 +7,7 @@ require (
 	github.com/emersion/go-smtp v0.24.0
 	github.com/go-resty/resty/v2 v2.17.2
 	github.com/jessevdk/go-flags v1.6.1
+	golang.org/x/crypto v0.48.0
 )
 
 require (
