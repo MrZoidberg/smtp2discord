@@ -1,0 +1,14 @@
+# Build artifacts
+smtp2discord
+smtp2discord.exe
+
+# Vendor directory (use go mod download instead)
+vendor/
+
+# Development files
+*.env
+.DS_Store
+
+# Test artifacts
+*.test
+*.out
