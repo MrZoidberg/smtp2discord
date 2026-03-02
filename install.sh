@@ -6,13 +6,16 @@
 #
 # Usage:
 #   # Interactive (prompts for webhook URL):
-#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh        # Ubuntu/Debian/Fedora/Amazon Linux
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh         # Alpine (uses doas, not sudo)
 #
 #   # Non-interactive (webhook URL supplied via flag):
 #   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh -s -- --webhook https://discord.com/api/webhooks/<ID>/<TOKEN>
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh -s -- --webhook https://discord.com/api/webhooks/<ID>/<TOKEN>   # Alpine
 #
 #   # Upgrade an existing installation (preserves /etc/default/smtp2discord):
 #   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | sudo sh -s -- --upgrade
+#   curl -fsSL https://raw.githubusercontent.com/MrZoidberg/smtp2discord/master/install.sh | doas sh -s -- --upgrade   # Alpine
 #
 set -e
 
@@ -36,7 +39,7 @@ step()  { printf '\n\033[1;34m[%s]\033[0m %s\n' "$1" "$2"; }
 # Require root.
 require_root() {
     if [ "$(id -u)" -ne 0 ]; then
-        error "This installer must be run as root (try: sudo sh install.sh)"
+        error "This installer must be run as root (try: sudo sh install.sh  or  doas sh install.sh on Alpine)"
     fi
 }
 
