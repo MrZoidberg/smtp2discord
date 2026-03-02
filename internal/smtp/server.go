@@ -312,7 +312,7 @@ func (s *Server) formatDiscordContent(from, subject, body string) (string, error
 		Body:    body,
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("execute message template: %w", err)
 	}
 
 	return strings.TrimSpace(buffer.String()), nil
