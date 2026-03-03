@@ -29,7 +29,7 @@ type Options struct {
 	MaxMessageSize int    `long:"msglimit"              default:"2097152"      env:"SMTP2DISCORD_MSG_LIMIT"             description:"Maximum incoming message size in bytes"`
 	ReadTimeout    int    `long:"timeout.read"          default:"5"            env:"SMTP2DISCORD_TIMEOUT_READ"          description:"Read timeout in seconds"`
 	WriteTimeout   int    `long:"timeout.write"         default:"5"            env:"SMTP2DISCORD_TIMEOUT_WRITE"         description:"Write timeout in seconds"`
-	Debug          bool   `long:"debug"                 default:"false"        env:"SMTP2DISCORD_DEBUG"                 description:"Enable debug logging (verbose SMTP protocol and Discord webhook logs)"`
+	Debug          bool   `long:"debug"                                        env:"SMTP2DISCORD_DEBUG"                 description:"Enable debug logging (verbose SMTP protocol and Discord webhook logs)"`
 }
 
 // Config holds resolved configuration with typed durations.
@@ -53,6 +53,7 @@ type Config struct {
 func Load() *Config {
 	var opts Options
 	if _, err := flags.Parse(&opts); err != nil {
+		fmt.Fprintf(os.Stderr, "invalid configuration: %v\n", err)
 		os.Exit(1)
 	}
 
