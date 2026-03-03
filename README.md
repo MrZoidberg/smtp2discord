@@ -108,6 +108,7 @@ SMTP2DISCORD_WEBHOOK=https://discord.com/api/webhooks/<ID>/<TOKEN>
 # SMTP2DISCORD_TIMEOUT_READ=5        # read timeout (seconds)
 # SMTP2DISCORD_TIMEOUT_WRITE=5       # write timeout (seconds)
 # SMTP2DISCORD_MESSAGE_TEMPLATE_FILE= # path to custom Go template
+# SMTP2DISCORD_DEBUG=false            # enable verbose debug logging
 ```
 
 Then start (or restart) the service:
@@ -126,6 +127,41 @@ sudo systemctl enable smtp2discord
 # OpenRC (Alpine)
 doas rc-update add smtp2discord default
 ```
+
+---
+
+## Logging
+
+smtp2discord uses Go's structured logging (`log/slog`) and writes logs to **stdout** in text format.
+
+### Log levels
+
+| Level | Content |
+|-------|---------|
+| INFO  | Server start, one line per successfully forwarded message |
+| ERROR | Failures (Discord send errors, server exit) |
+| DEBUG | Raw SMTP protocol traces, per-session command events (MAIL FROM, RCPT TO, AUTH, DATA, RSET, QUIT), Discord webhook request details and response status |
+
+### Enabling debug logging
+
+Set either the flag or the environment variable:
+
+```sh
+# CLI flag
+smtp2discord --debug --webhook=...
+
+# Environment variable (service / Docker)
+SMTP2DISCORD_DEBUG=true
+```
+
+In debug mode you will see:
+
+- Every incoming SMTP connection with its remote address.
+- Each SMTP command (`MAIL FROM`, `RCPT TO`, `AUTH`, `DATA`, `RSET`, `QUIT`) and its outcome.
+- Raw SMTP protocol lines exchanged between client and server.
+- Discord webhook POST details: username, content length, HTTP status code, and response body.
+
+> **Warning:** debug output may contain sensitive information (SMTP credentials, message content). Do not use it in production.
 
 ---
 
@@ -204,6 +240,7 @@ Required/validation rules:
 
 - `--webhook` is required.
 - `--smtp-user` and `--smtp-pass-hash` must be provided together (or both omitted).
+- `--debug` (or `SMTP2DISCORD_DEBUG=true`) enables verbose logging: raw SMTP protocol traces and Discord webhook request/response details are emitted at DEBUG level.
 
 ## Docker Compose
 

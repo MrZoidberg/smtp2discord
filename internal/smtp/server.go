@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log/slog"
 	"mime"
 	"mime/multipart"
 	"net/mail"
@@ -17,24 +16,25 @@ import (
 
 	"github.com/MrZoidberg/smtp2discord/internal/config"
 	"github.com/MrZoidberg/smtp2discord/internal/discord"
+	"github.com/MrZoidberg/smtp2discord/internal/logger"
 )
 
 // Server wraps the SMTP server configuration and its dependencies.
 type Server struct {
 	cfg             *config.Config
 	discord         *discord.Client
-	logger          *slog.Logger
+	logger          *logger.Logger
 	messageTemplate *template.Template
 }
 
 // NewServer creates a new SMTP server with the given configuration and logger.
-func NewServer(cfg *config.Config, logger *slog.Logger) *Server {
+func NewServer(cfg *config.Config, lgr *logger.Logger) *Server {
 	messageTemplate := template.Must(template.New("discord-message").Option("missingkey=zero").Parse(cfg.MessageTemplate))
 
 	return &Server{
 		cfg:             cfg,
-		discord:         discord.NewClient(cfg.Webhook),
-		logger:          logger,
+		discord:         discord.NewClient(cfg.Webhook, lgr),
+		logger:          lgr,
 		messageTemplate: messageTemplate,
 	}
 }
@@ -48,6 +48,10 @@ func (s *Server) ListenAndServe() error {
 	smtpServer.WriteTimeout = s.cfg.WriteTimeout
 	smtpServer.MaxMessageBytes = int64(s.cfg.MaxMessageSize)
 
+	if s.cfg.Debug {
+		smtpServer.Debug = s.logger
+	}
+
 	if err := smtpServer.ListenAndServe(); err != nil {
 		return fmt.Errorf("start SMTP server: %w", err)
 	}
@@ -56,7 +60,8 @@ func (s *Server) ListenAndServe() error {
 }
 
 // handleMessage processes an incoming SMTP message and forwards it to Discord.
-func (s *Server) handleMessage(rawMessage io.Reader, envelopeFrom string) error {
+// log should be the per-session logger so log entries carry the remote address.
+func (s *Server) handleMessage(log *logger.Logger, rawMessage io.Reader, envelopeFrom string) error {
 	msg, err := mail.ReadMessage(rawMessage)
 	if err != nil {
 		return fmt.Errorf("cannot parse message: %w", err)
@@ -81,11 +86,10 @@ func (s *Server) handleMessage(rawMessage io.Reader, envelopeFrom string) error 
 	}
 
 	if err := s.discord.Send(discordMsg); err != nil {
-		s.logger.Error("failed to forward message to Discord", "error", err)
 		return fmt.Errorf("cannot forward message to Discord: %w", err)
 	}
 
-	s.logger.Info(fmt.Sprintf("message forwarded to Discord from %s with subject %s", from, subject))
+	log.Infof("mail accepted from=%s subject=%q", from, subject)
 	return nil
 }
 
@@ -93,39 +97,53 @@ type backend struct {
 	server *Server
 }
 
-func (b *backend) NewSession(*gosmtp.Conn) (gosmtp.Session, error) {
-	return &session{server: b.server}, nil
+func (b *backend) NewSession(conn *gosmtp.Conn) (gosmtp.Session, error) {
+	remoteAddr := conn.Conn().RemoteAddr().String()
+	log := b.server.logger.With(fmt.Sprintf("[%s]", remoteAddr))
+	log.Debugf("new SMTP session")
+	return &session{server: b.server, logger: log}, nil
 }
 
 type session struct {
 	server        *Server
+	logger        *logger.Logger
 	authenticated bool
 	mailFrom      string
 }
 
 func (s *session) Mail(from string, _ *gosmtp.MailOptions) error {
 	if s.server.cfg.SMTPUsername != "" && !s.authenticated {
+		s.logger.Debugf("MAIL FROM rejected: authentication required, from=%s", from)
 		return &gosmtp.SMTPError{Code: 530, Message: "Authentication required"}
 	}
 
 	s.mailFrom = strings.TrimSpace(from)
+	s.logger.Debugf("MAIL FROM accepted, from=%s", s.mailFrom)
 
 	return nil
 }
 
-func (s *session) Rcpt(string, *gosmtp.RcptOptions) error {
+func (s *session) Rcpt(to string, _ *gosmtp.RcptOptions) error {
+	s.logger.Debugf("RCPT TO %s", to)
 	return nil
 }
 
 func (s *session) Data(reader io.Reader) error {
-	return s.server.handleMessage(reader, s.mailFrom)
+	s.logger.Debugf("DATA command received")
+	if err := s.server.handleMessage(s.logger, reader, s.mailFrom); err != nil {
+		s.logger.Infof("mail rejected from=%s: %v", s.mailFrom, err)
+		return err
+	}
+	return nil
 }
 
 func (s *session) Reset() {
+	s.logger.Debugf("RSET command received")
 	s.mailFrom = ""
 }
 
 func (s *session) Logout() error {
+	s.logger.Debugf("QUIT command received")
 	return nil
 }
 
@@ -148,13 +166,16 @@ func (s *session) Auth(mech string) (sasl.Server, error) {
 
 	return sasl.NewPlainServer(func(_, username, password string) error {
 		if username != s.server.cfg.SMTPUsername {
+			s.logger.Debugf("AUTH failed: wrong username=%s", username)
 			return gosmtp.ErrAuthFailed
 		}
 		if err := bcrypt.CompareHashAndPassword([]byte(s.server.cfg.SMTPPassHash), []byte(password)); err != nil {
+			s.logger.Debugf("AUTH failed: wrong password for username=%s", username)
 			return gosmtp.ErrAuthFailed
 		}
 
 		s.authenticated = true
+		s.logger.Debugf("AUTH successful, username=%s", username)
 		return nil
 	}), nil
 }

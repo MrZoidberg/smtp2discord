@@ -29,6 +29,7 @@ type Options struct {
 	MaxMessageSize int    `long:"msglimit"              default:"2097152"      env:"SMTP2DISCORD_MSG_LIMIT"             description:"Maximum incoming message size in bytes"`
 	ReadTimeout    int    `long:"timeout.read"          default:"5"            env:"SMTP2DISCORD_TIMEOUT_READ"          description:"Read timeout in seconds"`
 	WriteTimeout   int    `long:"timeout.write"         default:"5"            env:"SMTP2DISCORD_TIMEOUT_WRITE"         description:"Write timeout in seconds"`
+	Debug          bool   `long:"debug"                 default:"false"        env:"SMTP2DISCORD_DEBUG"                 description:"Enable debug logging (verbose SMTP protocol and Discord webhook logs)"`
 }
 
 // Config holds resolved configuration with typed durations.
@@ -44,6 +45,7 @@ type Config struct {
 	MaxMessageSize  int
 	ReadTimeout     time.Duration
 	WriteTimeout    time.Duration
+	Debug           bool
 }
 
 // Load parses command-line flags and returns a populated Config.
@@ -93,5 +95,6 @@ func Load() *Config {
 		MaxMessageSize:  opts.MaxMessageSize,
 		ReadTimeout:     time.Duration(opts.ReadTimeout) * time.Second,
 		WriteTimeout:    time.Duration(opts.WriteTimeout) * time.Second,
+		Debug:           opts.Debug,
 	}
 }
