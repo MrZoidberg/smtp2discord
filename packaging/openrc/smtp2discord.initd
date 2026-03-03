@@ -22,6 +22,7 @@ export SMTP2DISCORD_MSG_LIMIT
 export SMTP2DISCORD_TIMEOUT_READ
 export SMTP2DISCORD_TIMEOUT_WRITE
 export SMTP2DISCORD_DEBUG
+export SMTP2DISCORD_INSECURE_AUTH
 
 command="/usr/bin/smtp2discord"
 command_user="smtp2discord:smtp2discord"

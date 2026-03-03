@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"mime/multipart"
 	"net/mail"
@@ -47,6 +48,8 @@ func (s *Server) ListenAndServe() error {
 	smtpServer.ReadTimeout = s.cfg.ReadTimeout
 	smtpServer.WriteTimeout = s.cfg.WriteTimeout
 	smtpServer.MaxMessageBytes = int64(s.cfg.MaxMessageSize)
+	smtpServer.ErrorLog = log.New(s.logger, "", 0)
+	smtpServer.AllowInsecureAuth = s.cfg.AllowInsecureAuth
 
 	if s.cfg.Debug {
 		smtpServer.Debug = s.logger
@@ -60,8 +63,8 @@ func (s *Server) ListenAndServe() error {
 }
 
 // handleMessage processes an incoming SMTP message and forwards it to Discord.
-// log should be the per-session logger so log entries carry the remote address.
-func (s *Server) handleMessage(log *logger.Logger, rawMessage io.Reader, envelopeFrom string) error {
+// lgr should be the per-session logger so log entries carry the remote address.
+func (s *Server) handleMessage(lgr *logger.Logger, rawMessage io.Reader, envelopeFrom string) error {
 	msg, err := mail.ReadMessage(rawMessage)
 	if err != nil {
 		return fmt.Errorf("cannot parse message: %w", err)
@@ -89,7 +92,7 @@ func (s *Server) handleMessage(log *logger.Logger, rawMessage io.Reader, envelop
 		return fmt.Errorf("cannot forward message to Discord: %w", err)
 	}
 
-	log.Infof("mail accepted from=%s subject=%q", from, subject)
+	lgr.Infof("mail accepted from=%s subject=%q", from, subject)
 	return nil
 }
 
@@ -99,9 +102,9 @@ type backend struct {
 
 func (b *backend) NewSession(conn *gosmtp.Conn) (gosmtp.Session, error) {
 	remoteAddr := conn.Conn().RemoteAddr().String()
-	log := b.server.logger.With(fmt.Sprintf("[%s]", remoteAddr))
-	log.Debugf("new SMTP session")
-	return &session{server: b.server, logger: log}, nil
+	lgr := b.server.logger.With(fmt.Sprintf("[%s]", remoteAddr))
+	lgr.Debugf("new SMTP session")
+	return &session{server: b.server, logger: lgr}, nil
 }
 
 type session struct {

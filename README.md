@@ -109,6 +109,7 @@ SMTP2DISCORD_WEBHOOK=https://discord.com/api/webhooks/<ID>/<TOKEN>
 # SMTP2DISCORD_TIMEOUT_WRITE=5       # write timeout (seconds)
 # SMTP2DISCORD_MESSAGE_TEMPLATE_FILE= # path to custom Go template
 # SMTP2DISCORD_DEBUG=false            # enable verbose debug logging
+# SMTP2DISCORD_INSECURE_AUTH=false    # allow AUTH on non-TLS connections (use behind TLS proxy)
 ```
 
 Then start (or restart) the service:
