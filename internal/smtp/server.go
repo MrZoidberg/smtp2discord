@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"mime/multipart"
 	"net/mail"
@@ -47,6 +48,8 @@ func (s *Server) ListenAndServe() error {
 	smtpServer.ReadTimeout = s.cfg.ReadTimeout
 	smtpServer.WriteTimeout = s.cfg.WriteTimeout
 	smtpServer.MaxMessageBytes = int64(s.cfg.MaxMessageSize)
+	smtpServer.ErrorLog = log.New(s.logger, "", 0)
+	smtpServer.AllowInsecureAuth = s.cfg.AllowInsecureAuth
 
 	if s.cfg.Debug {
 		smtpServer.Debug = s.logger
@@ -55,6 +58,7 @@ func (s *Server) ListenAndServe() error {
 	if err := smtpServer.ListenAndServe(); err != nil {
 		return fmt.Errorf("start SMTP server: %w", err)
 	}
+
 
 	return nil
 }

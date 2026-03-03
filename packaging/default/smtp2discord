@@ -64,3 +64,9 @@ SMTP2DISCORD_WEBHOOK=
 # request/response details are written to the log at DEBUG level.
 # Default: false
 #SMTP2DISCORD_DEBUG=false
+
+# Allow AUTH on plain (non-TLS) connections.
+# Enable this when smtp2discord runs behind a TLS-terminating proxy that
+# handles encryption before passing traffic to smtp2discord.
+# Default: false
+#SMTP2DISCORD_INSECURE_AUTH=false
