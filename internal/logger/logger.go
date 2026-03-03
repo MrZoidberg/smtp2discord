@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"fmt"
 	"log"
 	"os"
 )
@@ -58,9 +57,9 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	if !l.debug {
 		return len(p), nil
 	}
-	line := fmt.Sprintf("%s", p)
+	line := string(p)
 	// strip trailing newlines — log.Logger adds its own
-	for len(line) > 0 && (line[len(line)-1] == '\n' || line[len(line)-1] == '\r') {
+	for line != "" && (line[len(line)-1] == '\n' || line[len(line)-1] == '\r') {
 		line = line[:len(line)-1]
 	}
 	if line != "" {

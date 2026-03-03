@@ -28,13 +28,13 @@ type Server struct {
 }
 
 // NewServer creates a new SMTP server with the given configuration and logger.
-func NewServer(cfg *config.Config, logger *logger.Logger) *Server {
+func NewServer(cfg *config.Config, lgr *logger.Logger) *Server {
 	messageTemplate := template.Must(template.New("discord-message").Option("missingkey=zero").Parse(cfg.MessageTemplate))
 
 	return &Server{
 		cfg:             cfg,
-		discord:         discord.NewClient(cfg.Webhook, logger),
-		logger:          logger,
+		discord:         discord.NewClient(cfg.Webhook, lgr),
+		logger:          lgr,
 		messageTemplate: messageTemplate,
 	}
 }
