@@ -21,6 +21,7 @@ export SMTP2DISCORD_WEBHOOK
 export SMTP2DISCORD_MSG_LIMIT
 export SMTP2DISCORD_TIMEOUT_READ
 export SMTP2DISCORD_TIMEOUT_WRITE
+export SMTP2DISCORD_DEBUG
 
 command="/usr/bin/smtp2discord"
 command_user="smtp2discord:smtp2discord"

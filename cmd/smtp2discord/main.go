@@ -1,23 +1,23 @@
 package main
 
 import (
-	"log/slog"
 	"os"
 
 	"github.com/MrZoidberg/smtp2discord/internal/config"
+	"github.com/MrZoidberg/smtp2discord/internal/logger"
 	"github.com/MrZoidberg/smtp2discord/internal/smtp"
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
 	cfg := config.Load()
 
-	server := smtp.NewServer(cfg, logger)
+	log := logger.New(cfg.Debug)
+	log.Infof("starting SMTP server on %s (debug=%v)", cfg.ListenAddr, cfg.Debug)
 
-	logger.Info("starting SMTP server", "addr", cfg.ListenAddr)
+	server := smtp.NewServer(cfg, log)
+
 	if err := server.ListenAndServe(); err != nil {
-		logger.Error("server exited with error", "error", err)
+		log.Errorf("server exited with error: %v", err)
 		os.Exit(1)
 	}
 }

@@ -58,3 +58,9 @@ SMTP2DISCORD_WEBHOOK=
 # Path to a custom Go template file for Discord message formatting.
 # Default: (empty — uses the built-in template)
 #SMTP2DISCORD_MESSAGE_TEMPLATE_FILE=
+
+# Enable debug logging.
+# When set to true, verbose SMTP protocol traces and Discord webhook
+# request/response details are written to the log at DEBUG level.
+# Default: false
+#SMTP2DISCORD_DEBUG=false
